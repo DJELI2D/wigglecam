@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pixel Wigglegram Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
+<style>
+  body {
+    background-color: #0f1115;
+    color: white;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overscroll-behavior-y: contain; /* Prevents pull-to-refresh on mobile */
+  }
+  
+  .view-container {
+    display: none;
+    flex-direction: column;
+    height: 100dvh; /* Uses dynamic viewport height for mobile */
+    width: 100%;
+  }
+  
+  .view-container.active {
+    display: flex;
+  }
+
+  /* Camera & Overlay Styles */
+  #viewfinder {
+    position: relative;
+    flex-grow: 1;
+    overflow: hidden;
+    background: #000;
+  }
+
+  #video-stream, #ghost-overlay, #wiggle-result {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures aspect ratio fills the screen */
+  }
+
+  #ghost-overlay {
+    opacity: 0.45; /* The transparency of the onion skin */
+    pointer-events: none;
+    z-index: 10;
+    display: none;
+    filter: contrast(1.2) grayscale(0.2); /* Makes the ghost slightly easier to distinguish */
+  }
+
+  .controls-bar {
+    padding: 20px;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    background: rgba(15, 17, 21, 0.95);
+    backdrop-filter: blur(10px);
+    z-index: 20;
+  }
+
+  .shutter-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: white;
+    border: 4px solid #cbd5e1;
+    outline: 4px solid white;
+    outline-offset: -8px;
+    transition: transform 0.1s;
+  }
+  
+  .shutter-btn:active {
+    transform: scale(0.95);
+  }
+</style>
+</head>
+<body>
+
+  <!-- VIEW 1: CAMERA -->
+  <div id="camera-view" class="view-container active">
+    
+    <!-- Top Bar -->
+    <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent">
+      <button id="btn-switch-camera" aria-label="Switch Camera" class="bg-black/40 hover:bg-black/60 p-2 rounded-full backdrop-blur transition-transform active:scale-95 text-white shadow-lg">
+        <i data-lucide="switch-camera" class="w-6 h-6"></i>
+      </button>
+      <div id="photo-counter" class="bg-blue-600 px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">0 Photos</div>
+    </div>
+
+    <!-- Viewfinder -->
+    <div id="viewfinder">
+      <video id="video-stream" autoplay playsinline></video>
+      <img id="ghost-overlay" src="" alt="Ghost overlay for alignment">
+      
+      <!-- Center crosshair to help keep subject centered -->
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-30">
+        <i data-lucide="crosshair" class="w-12 h-12 text-white"></i>
+      </div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="controls-bar flex justify-between items-center">
+      <button id="btn-reset" class="p-3 text-red-400 disabled:opacity-30 disabled:text-gray-500" disabled>
+        <i data-lucide="trash-2" class="w-6 h-6"></i>
+      </button>
+
+      <button id="btn-capture" class="shutter-btn shadow-lg" aria-label="Take Photo"></button>
+
+      <button id="btn-generate" class="p-3 text-blue-400 disabled:opacity-30 disabled:text-gray-500" disabled>
+        <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- VIEW 2: PREVIEW -->
+  <div id="preview-view" class="view-container">
+    <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent">
+      <button id="btn-back" class="bg-black/50 p-2 rounded-full backdrop-blur">
+        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+      </button>
+      <div class="font-semibold drop-shadow-md">Your Wigglegram</div>
+      <div class="w-10"></div> <!-- Spacer for flex alignment -->
+    </div>
+
+    <div class="flex-grow relative bg-black">
+      <img id="wiggle-result" src="" alt="Animated Wigglegram">
+    </div>
+
+    <div class="controls-bar">
+      <label class="block text-sm font-medium text-gray-300 mb-2">
+        Animation Speed: <span id="speed-display">120</span>ms
+      </label>
+      <input type="range" id="speed-slider" min="40" max="300" value="120" dir="rtl" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+      
+      <button id="btn-save-gif" class="mt-6 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors">
+        <i data-lucide="download" class="w-5 h-5"></i>
+        <span>Save as GIF</span>
+      </button>
+      <p id="gif-loading" class="text-sm text-center text-blue-400 mt-2 hidden animate-pulse">Generating GIF... this may take a moment.</p>
+
+      <p class="text-xs text-center text-gray-500 mt-4">
+        Long-press the image to save it as a static photo.
+      </p>
+    </div>
+  </div>
+
+  <!-- Hidden Canvas for Image Processing -->
+  <canvas id="capture-canvas" class="hidden"></canvas>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Elements
+    const cameraView = document.getElementById('camera-view');
+    const previewView = document.getElementById('preview-view');
+    const videoElement = document.getElementById('video-stream');
+    const ghostOverlay = document.getElementById('ghost-overlay');
+    const canvas = document.getElementById('capture-canvas');
+    const ctx = canvas.getContext('2d');
+    const wiggleResult = document.getElementById('wiggle-result');
+    
+    // Buttons
+    const btnCapture = document.getElementById('btn-capture');
+    const btnGenerate = document.getElementById('btn-generate');
+    const btnReset = document.getElementById('btn-reset');
+    const btnBack = document.getElementById('btn-back');
+    const btnSaveGif = document.getElementById('btn-save-gif');
+    const btnSwitchCamera = document.getElementById('btn-switch-camera');
+    const gifLoading = document.getElementById('gif-loading');
+    const speedSlider = document.getElementById('speed-slider');
+    const speedDisplay = document.getElementById('speed-display');
+    const photoCounter = document.getElementById('photo-counter');
+
+    // State
+    let stream = null;
+    let frames = [];
+    let wiggleInterval = null;
+    let currentFrameIndex = 0;
+    let playDirection = 1;
+    let currentFacingMode = 'environment';
+
+    // --- CAMERA SETUP ---
+    async function startCamera() {
+      try {
+        // Request the rear or front camera at high resolution
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: currentFacingMode,
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+        videoElement.srcObject = stream;
+        
+        // Mirror the preview and ghost if using the front camera
+        if (currentFacingMode === 'user') {
+          videoElement.style.transform = 'scaleX(-1)';
+          ghostOverlay.style.transform = 'scaleX(-1)';
+        } else {
+          videoElement.style.transform = 'none';
+          ghostOverlay.style.transform = 'none';
+        }
+      } catch (err) {
+        alert("Camera access denied or unavailable. Please ensure you have granted camera permissions in your browser.");
+        console.error(err);
+      }
+    }
+
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+    }
+    
+    // --- SWITCH CAMERA LOGIC ---
+    btnSwitchCamera.addEventListener('click', () => {
+      // Toggle mode and restart stream
+      currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+      stopCamera();
+      startCamera();
+    });
+
+    // --- CAPTURE LOGIC ---
+    btnCapture.addEventListener('click', () => {
+      if (!stream) return;
+
+      // Set canvas dimensions to match actual video resolution
+      canvas.width = videoElement.videoWidth;
+      canvas.height = videoElement.videoHeight;
+
+      // Draw current video frame to canvas
+      ctx.save();
+      if (currentFacingMode === 'user') {
+        // Flip canvas context so the saved photo matches the mirrored preview
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+      
+      // Convert to image data URL (maximum quality JPEG)
+      const imageData = canvas.toDataURL('image/jpeg', 1.0);
+      frames.push(imageData);
+
+      // Update UI
+      photoCounter.textContent = `${frames.length} Photos`;
+      btnGenerate.disabled = frames.length < 2;
+      btnReset.disabled = false;
+
+      // Update Ghost Overlay
+      ghostOverlay.src = imageData;
+      ghostOverlay.style.display = 'block';
+
+      // Brief flash effect
+      videoElement.style.opacity = '0';
+      setTimeout(() => videoElement.style.opacity = '1', 100);
+      
+      // Limit to max 15 frames to keep it manageable but allow for more photos
+      if (frames.length >= 15) {
+        btnCapture.disabled = true;
+        btnCapture.style.opacity = '0.5';
+        btnGenerate.classList.add('text-green-400');
+        btnGenerate.classList.remove('text-blue-400');
+      }
+    });
+
+    // --- RESET LOGIC ---
+    btnReset.addEventListener('click', () => {
+      frames = [];
+      photoCounter.textContent = `0 Photos`;
+      ghostOverlay.style.display = 'none';
+      btnGenerate.disabled = true;
+      btnReset.disabled = true;
+      btnCapture.disabled = false;
+      btnCapture.style.opacity = '1';
+      btnGenerate.classList.remove('text-green-400');
+      btnGenerate.classList.add('text-blue-400');
+    });
+
+    // --- GENERATE WIGGLEGRAM ---
+    btnGenerate.addEventListener('click', () => {
+      stopCamera();
+      cameraView.classList.remove('active');
+      previewView.classList.add('active');
+      startWiggle();
+    });
+
+    // --- BACK TO CAMERA ---
+    btnBack.addEventListener('click', () => {
+      stopWiggle();
+      previewView.classList.remove('active');
+      cameraView.classList.add('active');
+      startCamera();
+    });
+
+    // --- WIGGLE ANIMATION LOGIC ---
+    function startWiggle() {
+      stopWiggle();
+      if (frames.length === 0) return;
+
+      let speed = parseInt(speedSlider.value);
+      wiggleResult.src = frames[0];
+
+      wiggleInterval = setInterval(() => {
+        wiggleResult.src = frames[currentFrameIndex];
+        
+        // Boomerang loop (0 -> 1 -> 2 -> 1 -> 0)
+        if (frames.length > 2) {
+          currentFrameIndex += playDirection;
+          if (currentFrameIndex >= frames.length - 1 || currentFrameIndex <= 0) {
+            playDirection *= -1; // Reverse direction
+          }
+        } else {
+          // Standard flip for 2 images
+          currentFrameIndex = (currentFrameIndex + 1) % frames.length;
+        }
+      }, speed);
+    }
+
+    function stopWiggle() {
+      if (wiggleInterval) clearInterval(wiggleInterval);
+    }
+
+    // Speed slider listener
+    speedSlider.addEventListener('input', (e) => {
+      speedDisplay.textContent = e.target.value;
+      startWiggle(); // Restart interval with new speed
+    });
+
+    // --- SAVE AS GIF LOGIC ---
+    btnSaveGif.addEventListener('click', () => {
+      if (frames.length === 0) return;
+
+      // Update UI to show loading state
+      btnSaveGif.disabled = true;
+      btnSaveGif.classList.add('opacity-50', 'cursor-not-allowed');
+      gifLoading.classList.remove('hidden');
+
+      // Build the correct sequence for the boomerang effect
+      let gifSequence = [];
+      if (frames.length > 2) {
+        // Build loop: 0, 1, 2, 1
+        for (let i = 0; i < frames.length; i++) gifSequence.push(frames[i]);
+        for (let i = frames.length - 2; i > 0; i--) gifSequence.push(frames[i]);
+      } else {
+        // Standard loop: 0, 1
+        gifSequence = [...frames]; 
+      }
+
+      const currentSpeed = parseInt(speedSlider.value);
+      
+      // Calculate dimensions. Scale down to a max 1080px width for much higher quality
+      const maxGifWidth = 1080;
+      let gifW = canvas.width;
+      let gifH = canvas.height;
+      
+      if (gifW > maxGifWidth) {
+        const ratio = maxGifWidth / gifW;
+        gifW = maxGifWidth;
+        gifH = Math.round(gifH * ratio);
+      }
+
+      // Generate the GIF using gifshot
+      gifshot.createGIF({
+        images: gifSequence,
+        interval: currentSpeed / 1000, // gifshot uses seconds, so convert ms
+        gifWidth: gifW,
+        gifHeight: gifH,
+        sampleInterval: 1, // 1 is maximum color palette quality (looks at every pixel)
+        numWorkers: 4, // Uses extra processing threads to speed up the higher quality generation
+      }, function(obj) {
+        // Restore UI state
+        btnSaveGif.disabled = false;
+        btnSaveGif.classList.remove('opacity-50', 'cursor-not-allowed');
+        gifLoading.classList.add('hidden');
+
+        if (!obj.error) {
+          // Trigger the download automatically
+          const link = document.createElement('a');
+          link.href = obj.image;
+          link.download = `wigglegram_${Date.now()}.gif`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } else {
+          alert("Oops! Something went wrong generating the GIF.");
+        }
+      });
+    });
+
+    // Start camera when page loads
+    window.addEventListener('load', startCamera);
+
+  </script>
+</body>
+</html>
