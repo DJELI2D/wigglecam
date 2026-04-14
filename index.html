@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,23 +56,30 @@
   <!-- VIEW 1: CAMERA -->
   <div id="camera-view" class="view-container active">
     
-    <!-- Top Bar -->
-    <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent gap-2">
-      <button id="btn-switch-camera" aria-label="Switch Camera" class="bg-black/40 hover:bg-black/60 p-2 rounded-full backdrop-blur transition-transform active:scale-95 text-white shadow-lg">
-        <i data-lucide="switch-camera" class="w-6 h-6"></i>
-      </button>
+    <!-- Top Bar: Now using a strict 3-column grid for perfect centering -->
+    <div class="absolute top-0 left-0 w-full p-4 z-20 grid grid-cols-3 items-center bg-gradient-to-b from-black/60 to-transparent">
       
-      <button id="btn-aspect" class="bg-black/40 hover:bg-black/60 px-4 py-2 rounded-full backdrop-blur text-sm font-bold text-white shadow-lg transition-transform active:scale-95 tracking-widest">
-        3:4
-      </button>
+      <div class="justify-self-start">
+        <button id="btn-switch-camera" aria-label="Switch Camera" class="bg-black/40 hover:bg-black/60 p-2 rounded-full backdrop-blur transition-transform active:scale-95 text-white shadow-lg">
+          <i data-lucide="switch-camera" class="w-6 h-6"></i>
+        </button>
+      </div>
+      
+      <div class="justify-self-center">
+        <button id="btn-aspect" class="bg-black/40 hover:bg-black/60 px-4 py-2 rounded-full backdrop-blur text-sm font-bold text-white shadow-lg transition-transform active:scale-95 tracking-widest">
+          3:4
+        </button>
+      </div>
 
-      <div id="photo-counter" class="bg-blue-600 px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">0 / 15</div>
+      <div class="justify-self-end">
+        <div id="photo-counter" class="bg-blue-600 px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">0 / 15</div>
+      </div>
+
     </div>
 
     <!-- Viewfinder Area -->
     <div id="viewfinder-container" class="flex-grow flex items-center justify-center bg-black overflow-hidden relative">
-      <!-- The inner box forces the aspect ratio -->
-      <div id="viewfinder" class="relative w-full transition-all duration-300" style="aspect-ratio: 3/4;">
+      <div id="viewfinder" class="relative transition-all duration-300">
         <video id="video-stream" autoplay playsinline class="absolute top-0 left-0 w-full h-full object-cover"></video>
         <img id="ghost-overlay" class="absolute top-0 left-0 w-full h-full object-cover opacity-45 pointer-events-none z-10 hidden" style="filter: contrast(1.2) grayscale(0.2);" alt="Ghost overlay for alignment">
         
@@ -81,28 +89,44 @@
       </div>
     </div>
 
-    <!-- Bottom Controls -->
-    <div class="controls-bar flex justify-between items-center">
-      <button id="btn-reset" class="p-3 text-red-400 disabled:opacity-30 disabled:text-gray-500 transition-opacity" disabled>
-        <i data-lucide="trash-2" class="w-6 h-6"></i>
-      </button>
+    <!-- Bottom Controls: Also updated to strict 3-column grid -->
+    <div class="controls-bar grid grid-cols-3 items-center">
+      
+      <div class="justify-self-start">
+        <button id="btn-reset" class="p-3 text-red-400 disabled:opacity-30 disabled:text-gray-500 transition-opacity" disabled>
+          <i data-lucide="trash-2" class="w-6 h-6"></i>
+        </button>
+      </div>
 
-      <button id="btn-capture" class="shutter-btn shadow-lg" aria-label="Take Photo"></button>
+      <div class="justify-self-center">
+        <button id="btn-capture" class="shutter-btn shadow-lg" aria-label="Take Photo"></button>
+      </div>
 
-      <button id="btn-generate" class="p-3 text-blue-400 disabled:opacity-30 disabled:text-gray-500 transition-colors" disabled>
-        <i data-lucide="check-circle-2" class="w-8 h-8"></i>
-      </button>
+      <div class="justify-self-end">
+        <button id="btn-generate" class="p-3 text-blue-400 disabled:opacity-30 disabled:text-gray-500 transition-colors" disabled>
+          <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+        </button>
+      </div>
+
     </div>
   </div>
 
   <!-- VIEW 2: PREVIEW -->
   <div id="preview-view" class="view-container">
-    <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent">
-      <button id="btn-back" class="bg-black/50 p-2 rounded-full backdrop-blur text-white">
-        <i data-lucide="arrow-left" class="w-6 h-6"></i>
-      </button>
-      <div class="font-semibold drop-shadow-md">Your Wigglegram</div>
-      <div class="w-10"></div>
+    <div class="absolute top-0 left-0 w-full p-4 z-20 grid grid-cols-3 items-center bg-gradient-to-b from-black/60 to-transparent">
+      
+      <div class="justify-self-start">
+        <button id="btn-back" class="bg-black/50 p-2 rounded-full backdrop-blur text-white">
+          <i data-lucide="arrow-left" class="w-6 h-6"></i>
+        </button>
+      </div>
+      
+      <div class="justify-self-center font-semibold drop-shadow-md whitespace-nowrap">
+        Your Wigglegram
+      </div>
+      
+      <div class="justify-self-end"></div>
+
     </div>
 
     <div class="flex-grow flex items-center justify-center bg-black p-4">
@@ -133,6 +157,7 @@
     // Elements
     const cameraView = document.getElementById('camera-view');
     const previewView = document.getElementById('preview-view');
+    const viewfinderContainer = document.getElementById('viewfinder-container');
     const viewfinder = document.getElementById('viewfinder');
     const videoElement = document.getElementById('video-stream');
     const ghostOverlay = document.getElementById('ghost-overlay');
@@ -163,13 +188,38 @@
     
     // Aspect Ratio Options
     const aspectRatios = [
-      { name: '3:4', value: 3/4, css: '3/4' },
-      { name: '9:16', value: 9/16, css: '9/16' },
-      { name: '1:1', value: 1/1, css: '1/1' },
-      { name: '16:9', value: 16/9, css: '16/9' },
-      { name: '4:3', value: 4/3, css: '4/3' }
+      { name: '3:4', value: 3/4 },
+      { name: '9:16', value: 9/16 },
+      { name: '1:1', value: 1/1 },
+      { name: '16:9', value: 16/9 },
+      { name: '4:3', value: 4/3 }
     ];
-    let arIndex = 0;
+    let arIndex = 0; // Starts at 3:4
+
+    // --- HARD ROCK SIZING LOGIC ---
+    function resizeViewfinder() {
+      if (!cameraView.classList.contains('active')) return;
+
+      const rect = viewfinderContainer.getBoundingClientRect();
+      const cw = rect.width;
+      const ch = rect.height;
+
+      if (cw === 0 || ch === 0) return;
+
+      const targetRatio = aspectRatios[arIndex].value;
+
+      let finalWidth, finalHeight;
+      if (cw / ch > targetRatio) {
+        finalHeight = ch;
+        finalWidth = ch * targetRatio;
+      } else {
+        finalWidth = cw;
+        finalHeight = cw / targetRatio;
+      }
+
+      viewfinder.style.width = `${finalWidth}px`;
+      viewfinder.style.height = `${finalHeight}px`;
+    }
 
     // --- CAMERA SETUP ---
     async function startCamera() {
@@ -212,21 +262,9 @@
     });
 
     btnAspect.addEventListener('click', () => {
-      // Cycle through aspect ratios
       arIndex = (arIndex + 1) % aspectRatios.length;
-      const ar = aspectRatios[arIndex];
-      
-      btnAspect.textContent = ar.name;
-      viewfinder.style.aspectRatio = ar.css;
-      
-      // Update max width/height based on orientation for better mobile UI filling
-      if (ar.value > 1) { // Landscape
-        viewfinder.style.width = '100%';
-        viewfinder.style.height = 'auto';
-      } else { // Portrait / Square
-        viewfinder.style.height = '100%';
-        viewfinder.style.width = 'auto';
-      }
+      btnAspect.textContent = aspectRatios[arIndex].name;
+      resizeViewfinder();
     });
 
     // --- CAPTURE MATH (NO STRETCH CROPPING) ---
@@ -240,23 +278,20 @@
 
       let sx, sy, sWidth, sHeight;
 
-      // Calculate perfect crop based on object-fit: cover logic
       if (videoRatio > targetRatio) {
-        // Video is wider than target AR -> crop sides
         sHeight = vh;
         sWidth = vh * targetRatio;
         sx = (vw - sWidth) / 2;
         sy = 0;
       } else {
-        // Video is taller than target AR -> crop top/bottom
         sWidth = vw;
         sHeight = vw / targetRatio;
         sx = 0;
         sy = (vh - sHeight) / 2;
       }
 
-      canvas.width = sWidth;
-      canvas.height = sHeight;
+      canvas.width = Math.round(sWidth);
+      canvas.height = Math.round(sHeight);
 
       ctx.save();
       if (currentFacingMode === 'user') {
@@ -264,19 +299,15 @@
         ctx.scale(-1, 1);
       }
       
-      // Draw with cropping
-      ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
+      ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
       ctx.restore();
       
-      // Maximum quality JPEG
       const imageData = canvas.toDataURL('image/jpeg', 1.0);
       frames.push(imageData);
 
-      // Lock Aspect Ratio button so user doesn't change it mid-sequence
       btnAspect.disabled = true;
       btnAspect.classList.add('opacity-50');
 
-      // Update UI
       photoCounter.textContent = `${frames.length} / 15`;
       btnGenerate.disabled = frames.length < 2;
       btnReset.disabled = false;
@@ -284,7 +315,6 @@
       ghostOverlay.src = imageData;
       ghostOverlay.classList.remove('hidden');
 
-      // Brief flash
       viewfinder.style.opacity = '0.3';
       setTimeout(() => viewfinder.style.opacity = '1', 100);
       
@@ -308,7 +338,6 @@
       btnGenerate.classList.remove('text-green-400');
       btnGenerate.classList.add('text-blue-400');
       
-      // Unlock aspect ratio
       btnAspect.disabled = false;
       btnAspect.classList.remove('opacity-50');
     });
@@ -318,9 +347,6 @@
       stopCamera();
       cameraView.classList.remove('active');
       previewView.classList.add('active');
-      
-      // Set preview container aspect ratio to match
-      wiggleResult.style.aspectRatio = aspectRatios[arIndex].css;
       startWiggle();
     });
 
@@ -329,6 +355,7 @@
       previewView.classList.remove('active');
       cameraView.classList.add('active');
       startCamera();
+      setTimeout(resizeViewfinder, 10);
     });
 
     // --- ANIMATION ---
@@ -380,15 +407,14 @@
 
       const currentSpeed = parseInt(speedSlider.value);
       
-      // Max 1080px resolution
       const maxGifWidth = 1080;
       let gifW = canvas.width;
       let gifH = canvas.height;
       
       if (gifW > maxGifWidth) {
-        const ratio = maxGifWidth / gifW;
+        const ratio = gifW / gifH;
         gifW = maxGifWidth;
-        gifH = Math.round(gifH * ratio);
+        gifH = Math.round(gifW / ratio);
       }
 
       gifshot.createGIF({
@@ -396,8 +422,8 @@
         interval: currentSpeed / 1000,
         gifWidth: gifW,
         gifHeight: gifH,
-        sampleInterval: 1, // Maximum color quality
-        numWorkers: 4,     // Multi-threading for speed
+        sampleInterval: 1, 
+        numWorkers: 4,     
       }, function(obj) {
         btnSaveGif.disabled = false;
         btnSaveGif.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -416,9 +442,16 @@
       });
     });
 
-    // Start
-    window.addEventListener('load', startCamera);
+    // Event Listeners for Load & Screen Rotation/Resizing
+    window.addEventListener('load', () => {
+      startCamera();
+      setTimeout(resizeViewfinder, 100);
+    });
+    window.addEventListener('resize', resizeViewfinder);
 
   </script>
 </body>
 </html>
+
+
+```
