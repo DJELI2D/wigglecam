@@ -14,17 +14,17 @@
     padding: 0;
     width: 100%;
     height: 100%;
-    overflow: hidden; /* Completely disables scrollbars */
+    overflow: hidden;
     background-color: #0f1115;
     color: white;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    touch-action: none; /* Disables mobile swipe-to-refresh and panning */
+    touch-action: none;
   }
   
   .view-container {
     display: none;
     flex-direction: column;
-    height: 100%; /* Locked to the exact height of the locked body */
+    height: 100%;
     width: 100%;
   }
   
@@ -38,7 +38,7 @@
     background: rgba(15, 17, 21, 0.95);
     backdrop-filter: blur(10px);
     z-index: 20;
-    flex-shrink: 0; /* Prevents the bar from squishing */
+    flex-shrink: 0;
   }
 
   .shutter-btn {
@@ -55,6 +55,20 @@
   .shutter-btn:active {
     transform: scale(0.95);
   }
+
+  /* Hide scrollbar for the filter menu but keep it scrollable */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  /* Smooth filter transition on the preview image */
+  #wiggle-result {
+    transition: filter 0.3s ease;
+  }
 </style>
 </head>
 <body>
@@ -62,28 +76,22 @@
   <!-- VIEW 1: CAMERA -->
   <div id="camera-view" class="view-container active">
     
-    <!-- Top Bar: Strict 3-column grid for perfect centering -->
     <div class="absolute top-0 left-0 w-full p-4 z-20 grid grid-cols-3 items-center bg-gradient-to-b from-black/60 to-transparent">
-      
       <div class="justify-self-start">
         <button id="btn-switch-camera" aria-label="Switch Camera" class="bg-black/40 hover:bg-black/60 p-2 rounded-full backdrop-blur transition-transform active:scale-95 text-white shadow-lg">
           <i data-lucide="switch-camera" class="w-6 h-6"></i>
         </button>
       </div>
-      
       <div class="justify-self-center">
         <button id="btn-aspect" class="bg-black/40 hover:bg-black/60 px-4 py-2 rounded-full backdrop-blur text-sm font-bold text-white shadow-lg transition-transform active:scale-95 tracking-widest">
           3:4
         </button>
       </div>
-
       <div class="justify-self-end">
         <div id="photo-counter" class="bg-blue-600 px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">0 / 15</div>
       </div>
-
     </div>
 
-    <!-- Viewfinder Area -->
     <div id="viewfinder-container" class="flex-grow flex items-center justify-center bg-black overflow-hidden relative">
       <div id="viewfinder" class="relative transition-all duration-300">
         <video id="video-stream" autoplay playsinline class="absolute top-0 left-0 w-full h-full object-cover"></video>
@@ -95,58 +103,60 @@
       </div>
     </div>
 
-    <!-- Bottom Controls: Strict 3-column grid -->
     <div class="controls-bar grid grid-cols-3 items-center">
-      
       <div class="justify-self-start">
         <button id="btn-reset" class="p-3 text-red-400 disabled:opacity-30 disabled:text-gray-500 transition-opacity" disabled>
           <i data-lucide="trash-2" class="w-6 h-6"></i>
         </button>
       </div>
-
       <div class="justify-self-center">
         <button id="btn-capture" class="shutter-btn shadow-lg" aria-label="Take Photo"></button>
       </div>
-
       <div class="justify-self-end">
         <button id="btn-generate" class="p-3 text-blue-400 disabled:opacity-30 disabled:text-gray-500 transition-colors" disabled>
           <i data-lucide="check-circle-2" class="w-8 h-8"></i>
         </button>
       </div>
-
     </div>
   </div>
 
   <!-- VIEW 2: PREVIEW -->
   <div id="preview-view" class="view-container">
-    <div class="absolute top-0 left-0 w-full p-4 z-20 grid grid-cols-3 items-center bg-gradient-to-b from-black/60 to-transparent">
-      
-      <div class="justify-self-start">
+    <div class="absolute top-0 left-0 w-full p-4 z-20 grid grid-cols-3 items-center bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
+      <div class="justify-self-start pointer-events-auto">
         <button id="btn-back" class="bg-black/50 p-2 rounded-full backdrop-blur text-white">
           <i data-lucide="arrow-left" class="w-6 h-6"></i>
         </button>
       </div>
-      
       <div class="justify-self-center font-semibold drop-shadow-md whitespace-nowrap">
         Your Wigglegram
       </div>
-      
       <div class="justify-self-end"></div>
-
     </div>
 
-    <div class="flex-grow flex items-center justify-center bg-black p-4 overflow-hidden">
+    <div class="flex-grow flex items-center justify-center bg-black p-4 overflow-hidden pt-16">
       <img id="wiggle-result" src="" alt="Animated Wigglegram" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
     </div>
 
-    <div class="controls-bar">
+    <div class="controls-bar flex flex-col pt-2">
+      
+      <!-- Filter Menu -->
+      <div class="w-full overflow-x-auto whitespace-nowrap py-3 mb-2 no-scrollbar flex gap-2" id="filter-menu">
+        <button class="filter-btn bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow transition-colors" data-filter="none">Raw</button>
+        <button class="filter-btn bg-gray-800 text-gray-300 px-4 py-2 rounded-full text-sm font-bold shadow transition-colors" data-filter="blur(1.5px) contrast(1.4) saturate(1.5) sepia(0.2)">Fuzzy Laptop</button>
+        <button class="filter-btn bg-gray-800 text-gray-300 px-4 py-2 rounded-full text-sm font-bold shadow transition-colors" data-filter="sepia(0.5) contrast(1.2) saturate(1.2) brightness(0.9)">35mm Film</button>
+        <button class="filter-btn bg-gray-800 text-gray-300 px-4 py-2 rounded-full text-sm font-bold shadow transition-colors" data-filter="grayscale(1) contrast(1.5) brightness(0.9)">Noir B&W</button>
+        <button class="filter-btn bg-gray-800 text-gray-300 px-4 py-2 rounded-full text-sm font-bold shadow transition-colors" data-filter="contrast(1.2) saturate(1.8) hue-rotate(-15deg) sepia(0.1)">Vibrant 80s</button>
+        <button class="filter-btn bg-gray-800 text-gray-300 px-4 py-2 rounded-full text-sm font-bold shadow transition-colors" data-filter="blur(2px) brightness(1.2) saturate(0.8) contrast(0.9)">Dreamy</button>
+      </div>
+
       <label class="block text-sm font-medium text-gray-300 mb-2 flex justify-between">
         <span>Animation Speed</span>
         <span><span id="speed-display">120</span>ms</span>
       </label>
       <input type="range" id="speed-slider" min="40" max="300" value="120" dir="rtl" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
       
-      <button id="btn-save-gif" class="mt-6 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors">
+      <button id="btn-save-gif" class="mt-4 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors">
         <i data-lucide="download" class="w-5 h-5"></i>
         <span>Save as High-Res GIF</span>
       </button>
@@ -183,6 +193,7 @@
     const speedSlider = document.getElementById('speed-slider');
     const speedDisplay = document.getElementById('speed-display');
     const photoCounter = document.getElementById('photo-counter');
+    const filterButtons = document.querySelectorAll('.filter-btn');
 
     // State
     let stream = null;
@@ -191,6 +202,7 @@
     let currentFrameIndex = 0;
     let playDirection = 1;
     let currentFacingMode = 'environment';
+    let currentFilterCSS = 'none';
     
     // Aspect Ratio Options
     const aspectRatios = [
@@ -200,20 +212,16 @@
       { name: '16:9', value: 16/9 },
       { name: '4:3', value: 4/3 }
     ];
-    let arIndex = 0; // Starts at 3:4
+    let arIndex = 0; 
 
     // --- HARD ROCK SIZING LOGIC ---
     function resizeViewfinder() {
       if (!cameraView.classList.contains('active')) return;
-
       const rect = viewfinderContainer.getBoundingClientRect();
       const cw = rect.width;
       const ch = rect.height;
-
       if (cw === 0 || ch === 0) return;
-
       const targetRatio = aspectRatios[arIndex].value;
-
       let finalWidth, finalHeight;
       if (cw / ch > targetRatio) {
         finalHeight = ch;
@@ -222,7 +230,6 @@
         finalWidth = cw;
         finalHeight = cw / targetRatio;
       }
-
       viewfinder.style.width = `${finalWidth}px`;
       viewfinder.style.height = `${finalHeight}px`;
     }
@@ -231,15 +238,10 @@
     async function startCamera() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: currentFacingMode,
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          },
+          video: { facingMode: currentFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false
         });
         videoElement.srcObject = stream;
-        
         if (currentFacingMode === 'user') {
           videoElement.style.transform = 'scaleX(-1)';
           ghostOverlay.style.transform = 'scaleX(-1)';
@@ -249,7 +251,6 @@
         }
       } catch (err) {
         alert("Camera access denied or unavailable. Please ensure you have granted camera permissions.");
-        console.error(err);
       }
     }
 
@@ -273,15 +274,31 @@
       resizeViewfinder();
     });
 
+    // --- FILTER SELECTION ---
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // Remove active state from all
+        filterButtons.forEach(b => {
+          b.classList.remove('bg-blue-600', 'text-white');
+          b.classList.add('bg-gray-800', 'text-gray-300');
+        });
+        // Add active state to clicked
+        e.target.classList.remove('bg-gray-800', 'text-gray-300');
+        e.target.classList.add('bg-blue-600', 'text-white');
+        
+        // Apply filter to preview image
+        currentFilterCSS = e.target.dataset.filter;
+        wiggleResult.style.filter = currentFilterCSS;
+      });
+    });
+
     // --- CAPTURE MATH (NO STRETCH CROPPING) ---
     btnCapture.addEventListener('click', () => {
       if (!stream) return;
-
       const vw = videoElement.videoWidth;
       const vh = videoElement.videoHeight;
       const videoRatio = vw / vh;
       const targetRatio = aspectRatios[arIndex].value;
-
       let sx, sy, sWidth, sHeight;
 
       if (videoRatio > targetRatio) {
@@ -304,7 +321,6 @@
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
       }
-      
       ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
       ctx.restore();
       
@@ -343,7 +359,6 @@
       btnCapture.style.opacity = '1';
       btnGenerate.classList.remove('text-green-400');
       btnGenerate.classList.add('text-blue-400');
-      
       btnAspect.disabled = false;
       btnAspect.classList.remove('opacity-50');
     });
@@ -368,13 +383,10 @@
     function startWiggle() {
       stopWiggle();
       if (frames.length === 0) return;
-
       let speed = parseInt(speedSlider.value);
       wiggleResult.src = frames[0];
-
       wiggleInterval = setInterval(() => {
         wiggleResult.src = frames[currentFrameIndex];
-        
         if (frames.length > 2) {
           currentFrameIndex += playDirection;
           if (currentFrameIndex >= frames.length - 1 || currentFrameIndex <= 0) {
@@ -395,8 +407,34 @@
       startWiggle();
     });
 
+    // --- BAKE FILTERS HELPER ---
+    // This processes the raw frames through the canvas to apply the selected filter permanently for the GIF
+    async function bakeFiltersIntoSequence(sequenceArray, filterStr) {
+      if (filterStr === 'none') return sequenceArray;
+
+      const bakedSequence = [];
+      for (const frameSrc of sequenceArray) {
+        // Load the image frame
+        const img = new Image();
+        img.src = frameSrc;
+        await new Promise(resolve => img.onload = resolve);
+
+        // Resize canvas to match image
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Apply the CSS filter string to the canvas drawing context
+        ctx.filter = filterStr;
+        ctx.drawImage(img, 0, 0);
+        
+        // Push the new filtered image data to the array
+        bakedSequence.push(canvas.toDataURL('image/jpeg', 0.9));
+      }
+      return bakedSequence;
+    }
+
     // --- HIGH-RES GIF LOGIC ---
-    btnSaveGif.addEventListener('click', () => {
+    btnSaveGif.addEventListener('click', async () => {
       if (frames.length === 0) return;
 
       btnSaveGif.disabled = true;
@@ -411,11 +449,23 @@
         gifSequence = [...frames]; 
       }
 
+      // Bake the currently selected filter into the sequence before generating
+      try {
+        gifSequence = await bakeFiltersIntoSequence(gifSequence, currentFilterCSS);
+      } catch (err) {
+        console.error("Failed to bake filters:", err);
+      }
+
       const currentSpeed = parseInt(speedSlider.value);
-      
       const maxGifWidth = 1080;
-      let gifW = canvas.width;
-      let gifH = canvas.height;
+      
+      // Calculate final GIF dimensions based on the first frame
+      const firstImg = new Image();
+      firstImg.src = gifSequence[0];
+      await new Promise(res => firstImg.onload = res);
+      
+      let gifW = firstImg.width;
+      let gifH = firstImg.height;
       
       if (gifW > maxGifWidth) {
         const ratio = gifW / gifH;
@@ -448,7 +498,6 @@
       });
     });
 
-    // Event Listeners for Load & Screen Rotation/Resizing
     window.addEventListener('load', () => {
       startCamera();
       setTimeout(resizeViewfinder, 100);
