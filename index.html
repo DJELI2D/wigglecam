@@ -12,43 +12,18 @@
     background-color: #0f1115;
     color: white;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    overscroll-behavior-y: contain; /* Prevents pull-to-refresh on mobile */
+    overscroll-behavior-y: contain;
   }
   
   .view-container {
     display: none;
     flex-direction: column;
-    height: 100dvh; /* Uses dynamic viewport height for mobile */
+    height: 100dvh;
     width: 100%;
   }
   
   .view-container.active {
     display: flex;
-  }
-
-  /* Camera & Overlay Styles */
-  #viewfinder {
-    position: relative;
-    flex-grow: 1;
-    overflow: hidden;
-    background: #000;
-  }
-
-  #video-stream, #ghost-overlay, #wiggle-result {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* Ensures aspect ratio fills the screen */
-  }
-
-  #ghost-overlay {
-    opacity: 0.45; /* The transparency of the onion skin */
-    pointer-events: none;
-    z-index: 10;
-    display: none;
-    filter: contrast(1.2) grayscale(0.2); /* Makes the ghost slightly easier to distinguish */
   }
 
   .controls-bar {
@@ -81,33 +56,40 @@
   <div id="camera-view" class="view-container active">
     
     <!-- Top Bar -->
-    <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent">
+    <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent gap-2">
       <button id="btn-switch-camera" aria-label="Switch Camera" class="bg-black/40 hover:bg-black/60 p-2 rounded-full backdrop-blur transition-transform active:scale-95 text-white shadow-lg">
         <i data-lucide="switch-camera" class="w-6 h-6"></i>
       </button>
-      <div id="photo-counter" class="bg-blue-600 px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">0 Photos</div>
+      
+      <button id="btn-aspect" class="bg-black/40 hover:bg-black/60 px-4 py-2 rounded-full backdrop-blur text-sm font-bold text-white shadow-lg transition-transform active:scale-95 tracking-widest">
+        3:4
+      </button>
+
+      <div id="photo-counter" class="bg-blue-600 px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">0 / 15</div>
     </div>
 
-    <!-- Viewfinder -->
-    <div id="viewfinder">
-      <video id="video-stream" autoplay playsinline></video>
-      <img id="ghost-overlay" src="" alt="Ghost overlay for alignment">
-      
-      <!-- Center crosshair to help keep subject centered -->
-      <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-30">
-        <i data-lucide="crosshair" class="w-12 h-12 text-white"></i>
+    <!-- Viewfinder Area -->
+    <div id="viewfinder-container" class="flex-grow flex items-center justify-center bg-black overflow-hidden relative">
+      <!-- The inner box forces the aspect ratio -->
+      <div id="viewfinder" class="relative w-full transition-all duration-300" style="aspect-ratio: 3/4;">
+        <video id="video-stream" autoplay playsinline class="absolute top-0 left-0 w-full h-full object-cover"></video>
+        <img id="ghost-overlay" class="absolute top-0 left-0 w-full h-full object-cover opacity-45 pointer-events-none z-10 hidden" style="filter: contrast(1.2) grayscale(0.2);" alt="Ghost overlay for alignment">
+        
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-30">
+          <i data-lucide="crosshair" class="w-12 h-12 text-white"></i>
+        </div>
       </div>
     </div>
 
     <!-- Bottom Controls -->
     <div class="controls-bar flex justify-between items-center">
-      <button id="btn-reset" class="p-3 text-red-400 disabled:opacity-30 disabled:text-gray-500" disabled>
+      <button id="btn-reset" class="p-3 text-red-400 disabled:opacity-30 disabled:text-gray-500 transition-opacity" disabled>
         <i data-lucide="trash-2" class="w-6 h-6"></i>
       </button>
 
       <button id="btn-capture" class="shutter-btn shadow-lg" aria-label="Take Photo"></button>
 
-      <button id="btn-generate" class="p-3 text-blue-400 disabled:opacity-30 disabled:text-gray-500" disabled>
+      <button id="btn-generate" class="p-3 text-blue-400 disabled:opacity-30 disabled:text-gray-500 transition-colors" disabled>
         <i data-lucide="check-circle-2" class="w-8 h-8"></i>
       </button>
     </div>
@@ -116,32 +98,29 @@
   <!-- VIEW 2: PREVIEW -->
   <div id="preview-view" class="view-container">
     <div class="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent">
-      <button id="btn-back" class="bg-black/50 p-2 rounded-full backdrop-blur">
+      <button id="btn-back" class="bg-black/50 p-2 rounded-full backdrop-blur text-white">
         <i data-lucide="arrow-left" class="w-6 h-6"></i>
       </button>
       <div class="font-semibold drop-shadow-md">Your Wigglegram</div>
-      <div class="w-10"></div> <!-- Spacer for flex alignment -->
+      <div class="w-10"></div>
     </div>
 
-    <div class="flex-grow relative bg-black">
-      <img id="wiggle-result" src="" alt="Animated Wigglegram">
+    <div class="flex-grow flex items-center justify-center bg-black p-4">
+      <img id="wiggle-result" src="" alt="Animated Wigglegram" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
     </div>
 
     <div class="controls-bar">
-      <label class="block text-sm font-medium text-gray-300 mb-2">
-        Animation Speed: <span id="speed-display">120</span>ms
+      <label class="block text-sm font-medium text-gray-300 mb-2 flex justify-between">
+        <span>Animation Speed</span>
+        <span><span id="speed-display">120</span>ms</span>
       </label>
       <input type="range" id="speed-slider" min="40" max="300" value="120" dir="rtl" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
       
       <button id="btn-save-gif" class="mt-6 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors">
         <i data-lucide="download" class="w-5 h-5"></i>
-        <span>Save as GIF</span>
+        <span>Save as High-Res GIF</span>
       </button>
-      <p id="gif-loading" class="text-sm text-center text-blue-400 mt-2 hidden animate-pulse">Generating GIF... this may take a moment.</p>
-
-      <p class="text-xs text-center text-gray-500 mt-4">
-        Long-press the image to save it as a static photo.
-      </p>
+      <p id="gif-loading" class="text-sm text-center text-blue-400 mt-2 hidden animate-pulse">Processing high-quality GIF... please wait.</p>
     </div>
   </div>
 
@@ -149,25 +128,26 @@
   <canvas id="capture-canvas" class="hidden"></canvas>
 
   <script>
-    // Initialize Lucide icons
     lucide.createIcons();
 
     // Elements
     const cameraView = document.getElementById('camera-view');
     const previewView = document.getElementById('preview-view');
+    const viewfinder = document.getElementById('viewfinder');
     const videoElement = document.getElementById('video-stream');
     const ghostOverlay = document.getElementById('ghost-overlay');
     const canvas = document.getElementById('capture-canvas');
     const ctx = canvas.getContext('2d');
     const wiggleResult = document.getElementById('wiggle-result');
     
-    // Buttons
+    // Buttons & UI
     const btnCapture = document.getElementById('btn-capture');
     const btnGenerate = document.getElementById('btn-generate');
     const btnReset = document.getElementById('btn-reset');
     const btnBack = document.getElementById('btn-back');
     const btnSaveGif = document.getElementById('btn-save-gif');
     const btnSwitchCamera = document.getElementById('btn-switch-camera');
+    const btnAspect = document.getElementById('btn-aspect');
     const gifLoading = document.getElementById('gif-loading');
     const speedSlider = document.getElementById('speed-slider');
     const speedDisplay = document.getElementById('speed-display');
@@ -180,11 +160,20 @@
     let currentFrameIndex = 0;
     let playDirection = 1;
     let currentFacingMode = 'environment';
+    
+    // Aspect Ratio Options
+    const aspectRatios = [
+      { name: '3:4', value: 3/4, css: '3/4' },
+      { name: '9:16', value: 9/16, css: '9/16' },
+      { name: '1:1', value: 1/1, css: '1/1' },
+      { name: '16:9', value: 16/9, css: '16/9' },
+      { name: '4:3', value: 4/3, css: '4/3' }
+    ];
+    let arIndex = 0;
 
     // --- CAMERA SETUP ---
     async function startCamera() {
       try {
-        // Request the rear or front camera at high resolution
         stream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: currentFacingMode,
@@ -195,7 +184,6 @@
         });
         videoElement.srcObject = stream;
         
-        // Mirror the preview and ghost if using the front camera
         if (currentFacingMode === 'user') {
           videoElement.style.transform = 'scaleX(-1)';
           ghostOverlay.style.transform = 'scaleX(-1)';
@@ -204,7 +192,7 @@
           ghostOverlay.style.transform = 'none';
         }
       } catch (err) {
-        alert("Camera access denied or unavailable. Please ensure you have granted camera permissions in your browser.");
+        alert("Camera access denied or unavailable. Please ensure you have granted camera permissions.");
         console.error(err);
       }
     }
@@ -216,50 +204,90 @@
       }
     }
     
-    // --- SWITCH CAMERA LOGIC ---
+    // --- UI ACTIONS ---
     btnSwitchCamera.addEventListener('click', () => {
-      // Toggle mode and restart stream
       currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
       stopCamera();
       startCamera();
     });
 
-    // --- CAPTURE LOGIC ---
+    btnAspect.addEventListener('click', () => {
+      // Cycle through aspect ratios
+      arIndex = (arIndex + 1) % aspectRatios.length;
+      const ar = aspectRatios[arIndex];
+      
+      btnAspect.textContent = ar.name;
+      viewfinder.style.aspectRatio = ar.css;
+      
+      // Update max width/height based on orientation for better mobile UI filling
+      if (ar.value > 1) { // Landscape
+        viewfinder.style.width = '100%';
+        viewfinder.style.height = 'auto';
+      } else { // Portrait / Square
+        viewfinder.style.height = '100%';
+        viewfinder.style.width = 'auto';
+      }
+    });
+
+    // --- CAPTURE MATH (NO STRETCH CROPPING) ---
     btnCapture.addEventListener('click', () => {
       if (!stream) return;
 
-      // Set canvas dimensions to match actual video resolution
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
+      const vw = videoElement.videoWidth;
+      const vh = videoElement.videoHeight;
+      const videoRatio = vw / vh;
+      const targetRatio = aspectRatios[arIndex].value;
 
-      // Draw current video frame to canvas
+      let sx, sy, sWidth, sHeight;
+
+      // Calculate perfect crop based on object-fit: cover logic
+      if (videoRatio > targetRatio) {
+        // Video is wider than target AR -> crop sides
+        sHeight = vh;
+        sWidth = vh * targetRatio;
+        sx = (vw - sWidth) / 2;
+        sy = 0;
+      } else {
+        // Video is taller than target AR -> crop top/bottom
+        sWidth = vw;
+        sHeight = vw / targetRatio;
+        sx = 0;
+        sy = (vh - sHeight) / 2;
+      }
+
+      canvas.width = sWidth;
+      canvas.height = sHeight;
+
       ctx.save();
       if (currentFacingMode === 'user') {
-        // Flip canvas context so the saved photo matches the mirrored preview
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
       }
-      ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      
+      // Draw with cropping
+      ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
       ctx.restore();
       
-      // Convert to image data URL (maximum quality JPEG)
+      // Maximum quality JPEG
       const imageData = canvas.toDataURL('image/jpeg', 1.0);
       frames.push(imageData);
 
+      // Lock Aspect Ratio button so user doesn't change it mid-sequence
+      btnAspect.disabled = true;
+      btnAspect.classList.add('opacity-50');
+
       // Update UI
-      photoCounter.textContent = `${frames.length} Photos`;
+      photoCounter.textContent = `${frames.length} / 15`;
       btnGenerate.disabled = frames.length < 2;
       btnReset.disabled = false;
 
-      // Update Ghost Overlay
       ghostOverlay.src = imageData;
-      ghostOverlay.style.display = 'block';
+      ghostOverlay.classList.remove('hidden');
 
-      // Brief flash effect
-      videoElement.style.opacity = '0';
-      setTimeout(() => videoElement.style.opacity = '1', 100);
+      // Brief flash
+      viewfinder.style.opacity = '0.3';
+      setTimeout(() => viewfinder.style.opacity = '1', 100);
       
-      // Limit to max 15 frames to keep it manageable but allow for more photos
       if (frames.length >= 15) {
         btnCapture.disabled = true;
         btnCapture.style.opacity = '0.5';
@@ -268,28 +296,34 @@
       }
     });
 
-    // --- RESET LOGIC ---
+    // --- RESET ---
     btnReset.addEventListener('click', () => {
       frames = [];
-      photoCounter.textContent = `0 Photos`;
-      ghostOverlay.style.display = 'none';
+      photoCounter.textContent = `0 / 15`;
+      ghostOverlay.classList.add('hidden');
       btnGenerate.disabled = true;
       btnReset.disabled = true;
       btnCapture.disabled = false;
       btnCapture.style.opacity = '1';
       btnGenerate.classList.remove('text-green-400');
       btnGenerate.classList.add('text-blue-400');
+      
+      // Unlock aspect ratio
+      btnAspect.disabled = false;
+      btnAspect.classList.remove('opacity-50');
     });
 
-    // --- GENERATE WIGGLEGRAM ---
+    // --- GENERATE ---
     btnGenerate.addEventListener('click', () => {
       stopCamera();
       cameraView.classList.remove('active');
       previewView.classList.add('active');
+      
+      // Set preview container aspect ratio to match
+      wiggleResult.style.aspectRatio = aspectRatios[arIndex].css;
       startWiggle();
     });
 
-    // --- BACK TO CAMERA ---
     btnBack.addEventListener('click', () => {
       stopWiggle();
       previewView.classList.remove('active');
@@ -297,7 +331,7 @@
       startCamera();
     });
 
-    // --- WIGGLE ANIMATION LOGIC ---
+    // --- ANIMATION ---
     function startWiggle() {
       stopWiggle();
       if (frames.length === 0) return;
@@ -308,14 +342,12 @@
       wiggleInterval = setInterval(() => {
         wiggleResult.src = frames[currentFrameIndex];
         
-        // Boomerang loop (0 -> 1 -> 2 -> 1 -> 0)
         if (frames.length > 2) {
           currentFrameIndex += playDirection;
           if (currentFrameIndex >= frames.length - 1 || currentFrameIndex <= 0) {
-            playDirection *= -1; // Reverse direction
+            playDirection *= -1;
           }
         } else {
-          // Standard flip for 2 images
           currentFrameIndex = (currentFrameIndex + 1) % frames.length;
         }
       }, speed);
@@ -325,35 +357,30 @@
       if (wiggleInterval) clearInterval(wiggleInterval);
     }
 
-    // Speed slider listener
     speedSlider.addEventListener('input', (e) => {
       speedDisplay.textContent = e.target.value;
-      startWiggle(); // Restart interval with new speed
+      startWiggle();
     });
 
-    // --- SAVE AS GIF LOGIC ---
+    // --- HIGH-RES GIF LOGIC ---
     btnSaveGif.addEventListener('click', () => {
       if (frames.length === 0) return;
 
-      // Update UI to show loading state
       btnSaveGif.disabled = true;
       btnSaveGif.classList.add('opacity-50', 'cursor-not-allowed');
       gifLoading.classList.remove('hidden');
 
-      // Build the correct sequence for the boomerang effect
       let gifSequence = [];
       if (frames.length > 2) {
-        // Build loop: 0, 1, 2, 1
         for (let i = 0; i < frames.length; i++) gifSequence.push(frames[i]);
         for (let i = frames.length - 2; i > 0; i--) gifSequence.push(frames[i]);
       } else {
-        // Standard loop: 0, 1
         gifSequence = [...frames]; 
       }
 
       const currentSpeed = parseInt(speedSlider.value);
       
-      // Calculate dimensions. Scale down to a max 1080px width for much higher quality
+      // Max 1080px resolution
       const maxGifWidth = 1080;
       let gifW = canvas.width;
       let gifH = canvas.height;
@@ -364,22 +391,19 @@
         gifH = Math.round(gifH * ratio);
       }
 
-      // Generate the GIF using gifshot
       gifshot.createGIF({
         images: gifSequence,
-        interval: currentSpeed / 1000, // gifshot uses seconds, so convert ms
+        interval: currentSpeed / 1000,
         gifWidth: gifW,
         gifHeight: gifH,
-        sampleInterval: 1, // 1 is maximum color palette quality (looks at every pixel)
-        numWorkers: 4, // Uses extra processing threads to speed up the higher quality generation
+        sampleInterval: 1, // Maximum color quality
+        numWorkers: 4,     // Multi-threading for speed
       }, function(obj) {
-        // Restore UI state
         btnSaveGif.disabled = false;
         btnSaveGif.classList.remove('opacity-50', 'cursor-not-allowed');
         gifLoading.classList.add('hidden');
 
         if (!obj.error) {
-          // Trigger the download automatically
           const link = document.createElement('a');
           link.href = obj.image;
           link.download = `wigglegram_${Date.now()}.gif`;
@@ -392,7 +416,7 @@
       });
     });
 
-    // Start camera when page loads
+    // Start
     window.addEventListener('load', startCamera);
 
   </script>
